@@ -1,23 +1,27 @@
 <!DOCTYPE html>
-<html>  
+<html>
     <head>
         <meta charset="utf-8">
         <title>SocialAuth</title>
+        <link rel="stylesheet" href="https://bootswatch.com/4/darkly/bootstrap.min.css" >
+        <style media="screen">
+            #logout,#feed{display: none}
+        </style>
     </head>
     <body>
-
-    <script>
+        
+        <script>
             window.fbAsyncInit = function() {
             FB.init({
                 appId      : '853429341517427',
                 cookie     : true,
                 xfbml      : true,
-                version    : 'v2.8'
+                version    : 'v3.1' 
             });
                 
             FB.getLoginStatus(function(response) {
-                statusChangeCallback(response);
-            });
+                    statusChangeCallback(response);
+                }); 
                 
             };
         
@@ -30,14 +34,125 @@
             }(document, 'script', 'facebook-jssdk'));
 
             function statusChangeCallback(response){
-                if(response.status == 'conected'){
-                    console.log('logged in and authenticated')
+                if(response.status == 'connected'){
+                    setElements(true);
+                    var accessToken = response.authResponse.accessToken;
+                    testAPI();
+                    console.log('conectado - accessToken:'+accessToken)
                 }else{
-                    console.log('not authenticated')
+                    console.log('não conectado')
+                    setElements(false);
                 }
+            }
+
+            function checkLoginState() {
+                FB.getLoginStatus(function(response) {
+                    statusChangeCallback(response);
+                });
+            }
+
+            function testAPI(){
+                FB.api('/me?fields=name,email',function(response){
+                    if(response && !response.error){
+                        buildProfile(response);
+                    }
+             
+
+                    FB.api('/me/feed',function(response){
+                        if(response && !response.error){
+                            buildFeed(response);
+                        }
+
+                        FB.api('/search?type=place&q=cafe&center=40.7304,-73.9921&distance=1000&fields=name,checkins,picture',function(response){
+                            console.log(response)
+                            if(response && !response.error){
+                                builddh(response);
+                            }
+                        });
+                        });
+                    });
+             }
+
+            function buildProfile(user){
+                let profile = '<h3>'+user.name+'<h/3>'+
+               '<ul class="list-group">'+
+                    '<li class="list-group-item">User Id:'+user.id+'</li>'+
+                    '<li class="list-group-item">Email:'+user.email+'</li>'+
+                '</ul>'
+                document.getElementById('profile').innerHTML=profile;
+            }
+
+            function buildFeed(feed){
+                let output = '<h3>Posts Recentes</h3>'
+                for(let i in feed.data){
+                    if(feed.data[i].message){
+                        output +='<div class="well list-group-item">'+
+                        '<span> Data:'+feed.data[i].created_time+'</span><br/>Post: '+
+                        feed.data[i].message+'</div>'
+                    }
+                }
+                document.getElementById('feed').innerHTML = output;
+            }
+
+               function builddh(dh){
+                let output = '<h3>Direitos Humanos</h3>'
+                for(let i in dh.data){
+                    if(dh.data[i].name){
+                        output +='<div class="well list-group-item">'+
+                        '<span> Data:'+dh.data[i].name+'</span><br/>Post: '+
+                        dh.data[i].name+'</div>'
+                    }
+                }
+                document.getElementById('dh').innerHTML = output;
+            }
+
+            function setElements(isLoggedIn){
+            if(isLoggedIn){
+                document.getElementById('feed').style.display = 'block'
+                document.getElementById('logout').style.display = 'block'
+                document.getElementById('profile').style.display = 'block'
+                document.getElementById('fb-btn').style.display = 'none'
+                document.getElementById('heading').style.display = 'none'
+            }else{
+                document.getElementById('feed').style.display = 'none'
+                document.getElementById('logout').style.display = 'none'
+                document.getElementById('profile').style.display = 'none'
+                document.getElementById('fb-btn').style.display = 'block'
+                document.getElementById('heading').style.display = 'block'
+                }
+            }
+
+            function logout(){
+                FB.logout(function(){
+                    setElements(false);
+                });
             }
         </script>
 
-    </body>
+<div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
+        <h5 class="my-0 mr-md-auto font-weight-normal">Social Fb</h5>
+        <nav class="my-2 my-md-0 mr-md-3">
+     
+        <a class="p-2 text-dark" href="#">Features</a>
+        <a class="p-2 text-dark" href="#">Enterprise</a>
+        <a class="p-2 text-dark" href="#">Support</a>
+        <a class="p-2 text-dark" href="#">Pricing</a>
+        
+        </nav>
+        <fb:login-button 
+        id="fb-btn"
+       scope="public_profile,email,user_posts"
+       onlogin="checkLoginState();">
+   </fb:login-button>
+        <a class="btn btn-outline-primary" id="logout" onclick="logout()" href="#">Logout</a>
+      </div>
 
+     <div class="container">
+        <h3 id="heading">Faça login em seu perfil </h3>
+        <div id="profile"></div>
+        <div id="feed"></div>
+        <div id="dh"></div>
+     </div>
+
+    </body>
 </html>
